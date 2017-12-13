@@ -3,3 +3,15 @@
  * @brief TODO
  *
  */
+
+typedef unsigned long long utc_time_us;
+
+typedef unsigned long long dp_guid;
+
+struct msg_header
+{
+    dp_guid src_guid;
+    dp_guid dst_guid;
+    utc_time_us rx_time;
+    utc_time_us tx_time;
+};

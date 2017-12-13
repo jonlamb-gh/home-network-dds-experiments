@@ -39,6 +39,7 @@ struct sensor_measurement
 
 struct sensor_info
 {
+    msg_header header;
     unsigned long sensor_id; // @key
     string<SENSOR_STRING_LEN> name;
     string<SENSOR_STRING_LEN> description;
@@ -53,17 +54,20 @@ struct sensor_info
 
 struct sensor_info_req
 {
+    msg_header header;
     unsigned long sensor_id; // @key
 };
 
 struct sensor_data
 {
+    msg_header header;
     unsigned long sensor_id; // @key
     sensor_measurement measurement;
 };
 
 struct sensor_data_array
 {
+    msg_header header;
     unsigned long sensor_id; // @key
     sequence<sensor_measurement, SENSOR_DATA_ARRAY_MAX> measurements;
 };
