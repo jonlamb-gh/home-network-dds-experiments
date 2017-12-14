@@ -4,3 +4,5 @@ project(home-network)
 # TODO
 # https://rix0r.nl/blog/2015/08/13/cmake-guide/
 
+enable_testing()
+add_subdirectory(libhome_network)
