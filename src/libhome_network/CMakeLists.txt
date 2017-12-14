@@ -9,6 +9,7 @@ enable_testing()
 
 add_library(
         home_network
+        STATIC
         src/home_network.c)
 
 set_property(
@@ -70,10 +71,18 @@ target_sources(
         PRIVATE
         ${IDL_SOURCES})
 
+link_directories(
+        ${PROJECT_ROOT}/src/vendor/lib)
+
 target_link_libraries(
         home_network
         -static-libgcc
         -static)
+
+# TODO - fix static linking
+#target_link_libraries(
+#        home_network
+#        librti_mez.a)
 
 target_include_directories(
         home_network
@@ -81,7 +90,9 @@ target_include_directories(
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
         PRIVATE
-        src)
+        src
+        idl_sources
+        ${PROJECT_ROOT}/src/vendor/include/rti_me)
 
 # this makes the project importable from the build directory
 export(
@@ -103,12 +114,12 @@ set_property(
 
 target_link_libraries(
         example_test
-        home_network)
+        -static-libgcc
+        -static)
 
 target_link_libraries(
         example_test
-        -static-libgcc
-        -static)
+        home_network)
 
 add_test(
         example_test
