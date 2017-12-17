@@ -1,5 +1,5 @@
 # home-network
-TODO
+Sandbox of things to communicate with the devices around my house.
 
 ## Partitioning
 TODO

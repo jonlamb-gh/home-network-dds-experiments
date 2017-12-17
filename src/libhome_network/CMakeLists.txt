@@ -19,6 +19,24 @@ set_property(
         C_STANDARD
         99)
 
+target_compile_definitions(
+        home_network
+        PUBLIC
+        -DRTI_UNIX
+        -DRTI_LINUX
+        -DRTI_POSIX_THREADS)
+
+target_compile_options(
+        home_network
+        PRIVATE
+        -Wall
+        -Wextra
+        -Wno-unused-parameter
+        -Wwrite-strings
+        #-Wstrict-prototypes
+        -Wmissing-include-dirs
+        -Werror)
+
 file(
         GLOB_RECURSE
         IDL_FILES
@@ -74,25 +92,33 @@ target_sources(
 link_directories(
         ${PROJECT_ROOT}/src/vendor/lib)
 
+include_directories(
+        ${PROJECT_ROOT}/src/vendor/include
+        ${PROJECT_ROOT}/src/vendor/include/rti_me)
+
 target_link_libraries(
         home_network
         -static-libgcc
         -static)
 
 # TODO - fix static linking
-#target_link_libraries(
-#        home_network
-#        librti_mez.a)
+target_link_libraries(
+        home_network
+        rti_mez
+        dl
+        nsl
+        m
+        pthread
+        rt)
 
 target_include_directories(
         home_network
         PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/idl_sources>
         $<INSTALL_INTERFACE:include>
         PRIVATE
-        src
-        idl_sources
-        ${PROJECT_ROOT}/src/vendor/include/rti_me)
+        src)
 
 # this makes the project importable from the build directory
 export(
