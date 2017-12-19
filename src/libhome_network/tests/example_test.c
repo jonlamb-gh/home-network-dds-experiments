@@ -17,15 +17,21 @@ int main(int argc, char **argv)
     (void) memset(&participant, 0, sizeof(participant));
 
     printf("---------->\n");
+    printf("  'hn_create()'\n");
     DDS_ReturnCode_t ret_c = hn_create(&participant);
+    printf("    %d\n", (int) ret_c);
     printf("<----------\n");
     
     printf("---------->\n");
+    printf("  'hn_enable()'\n");
     DDS_ReturnCode_t ret_e = hn_enable(&participant);
+    printf("    %d\n", (int) ret_e);
     printf("<----------\n");
     
     printf("---------->\n");
+    printf("  'hn_destroy()'\n");
     DDS_ReturnCode_t ret_d = hn_destroy(&participant);
+    printf("    %d\n", (int) ret_d);
     printf("<----------\n");
 
     printf(

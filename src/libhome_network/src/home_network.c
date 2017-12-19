@@ -101,16 +101,13 @@ static DDS_ReturnCode_t register_udp_transport(
             ret = DDS_RETCODE_PRECONDITION_NOT_MET;
         }
 
+        /*
         if(*REDA_StringSeq_get_reference(&udp_property->allow_interface, 0) != NULL)
         {
             REDA_String_free(*REDA_StringSeq_get_reference(&udp_property->allow_interface, 0));
             *REDA_StringSeq_get_reference(&udp_property->allow_interface, 0) = NULL;
         }
-    }
-
-    if(udp_property != NULL)
-    {
-        free(udp_property);
+        */
     }
 
     return ret;
@@ -183,7 +180,7 @@ DDS_ReturnCode_t hn_create(
 
     if(ret == DDS_RETCODE_OK)
     {
-        // TODO configure resource limits
+        // TODO configure resource limits, name, domain, etc
 
         struct DDS_DomainParticipantQos dp_qos =
                 DDS_DomainParticipantQos_INITIALIZER;
@@ -198,7 +195,7 @@ DDS_ReturnCode_t hn_create(
 
         participant->dp = DDS_DomainParticipantFactory_create_participant(
                 factory,
-                0, // domain_id,
+                0, // TODO domain_id,
                 &dp_qos,
                 NULL,
                 DDS_STATUS_MASK_NONE);
@@ -261,7 +258,18 @@ DDS_ReturnCode_t hn_destroy(
             RT_Registry_T * const registry = DDS_DomainParticipantFactory_get_registry(
                     DDS_DomainParticipantFactory_get_instance());
 
-            (void) RT_Registry_unregister(registry, "dpde", NULL, NULL);
+            (void) RT_Registry_unregister(
+                    registry,
+                    "dpde",
+                    NULL,
+                    NULL);
+
+            struct RT_ComponentFactoryProperty *udp_property = NULL;
+            (void) RT_Registry_unregister(
+                    registry,
+                    NETIO_DEFAULT_UDP_NAME,
+                    &udp_property,
+                    NULL);
 
             (void) RT_Registry_unregister(
                     registry,
@@ -277,6 +285,11 @@ DDS_ReturnCode_t hn_destroy(
 
             DDS_DomainParticipantFactory_finalize_instance();
             participant->dp = NULL;
+
+            if(udp_property  != NULL)
+            {
+                free(udp_property);
+            }
         }
     }
 
