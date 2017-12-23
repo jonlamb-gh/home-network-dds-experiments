@@ -185,6 +185,16 @@ DDS_ReturnCode_t hn_create(
         struct DDS_DomainParticipantQos dp_qos =
                 DDS_DomainParticipantQos_INITIALIZER;
 
+        dp_qos.resource_limits.max_destination_ports = 32;
+        dp_qos.resource_limits.max_receive_ports = 32;
+        dp_qos.resource_limits.local_topic_allocation = 1;
+        dp_qos.resource_limits.local_type_allocation = 1;
+        dp_qos.resource_limits.local_reader_allocation = 1;
+        dp_qos.resource_limits.local_writer_allocation = 1;
+        dp_qos.resource_limits.remote_participant_allocation = 16;
+        dp_qos.resource_limits.remote_reader_allocation = 8;
+        dp_qos.resource_limits.remote_writer_allocation = 8;
+
         strcpy(dp_qos.participant_name.name, "Participant_1");
 
         // set initial peers to use the default multicast peer
@@ -238,6 +248,92 @@ DDS_ReturnCode_t hn_enable(
     return ret;
 }
 
+DDS_ReturnCode_t hn_create_topic(
+        const char * const name,
+        struct NDDS_Type_Plugin * const plugin,
+        hn_participant_s * const participant)
+{
+    DDS_ReturnCode_t ret = DDS_RETCODE_OK;
+
+    if((participant == NULL) || (participant->dp == NULL))
+    {
+        ret = DDS_RETCODE_BAD_PARAMETER;
+    }
+
+    if(ret == DDS_RETCODE_OK)
+    {
+        if(participant->topic_data.len > HN_TOPICS_MAX)
+        {
+            ret = DDS_RETCODE_OUT_OF_RESOURCES;
+        }
+    }
+
+    if(ret == DDS_RETCODE_OK)
+    {
+        const DDS_UnsignedLong idx = participant->topic_data.len;
+
+        (void) strncpy(
+                participant->topic_data.names[idx],
+                name,
+                sizeof(participant->topic_data.names[idx]));
+
+        ret = DDS_DomainParticipant_register_type(
+                participant->dp,
+                name,
+                plugin);
+
+        if(ret == DDS_RETCODE_OK)
+        {
+            participant->topic_data.topics[idx] =
+                    DDS_DomainParticipant_create_topic(
+                            participant->dp,
+                            name,
+                            name,
+                            &DDS_TOPIC_QOS_DEFAULT,
+                            NULL,
+                            DDS_STATUS_MASK_NONE);
+
+            if(participant->topic_data.topics[idx] == NULL)
+            {
+                ret = DDS_RETCODE_PRECONDITION_NOT_MET;
+            }
+        }
+
+        participant->topic_data.len += 1;
+    }
+
+    return ret;
+}
+
+DDS_ReturnCode_t hn_unregister_types(
+        hn_participant_s * const participant)
+{
+    DDS_ReturnCode_t ret = DDS_RETCODE_OK;
+
+    if(participant != NULL)
+    {
+        if(participant->dp != NULL)
+        {
+            DDS_UnsignedLong idx;
+
+            for(idx = 0; idx < participant->topic_data.len; idx += 1)
+            {
+                const struct NDDS_Type_Plugin * const plugin =
+                        DDS_DomainParticipant_unregister_type(
+                                participant->dp,
+                                participant->topic_data.names[idx]);
+
+                if(plugin == NULL)
+                {
+                    ret = DDS_RETCODE_PRECONDITION_NOT_MET;
+                }
+            }
+        }
+    }
+
+    return ret;
+}
+
 DDS_ReturnCode_t hn_destroy(
         hn_participant_s * const participant)
 {
@@ -250,6 +346,8 @@ DDS_ReturnCode_t hn_destroy(
             // TODO - improve this
 
             ret = DDS_DomainParticipant_delete_contained_entities(participant->dp);
+
+            ret |= hn_unregister_types(participant);
 
             ret |= DDS_DomainParticipantFactory_delete_participant(
                     DDS_DomainParticipantFactory_get_instance(),
