@@ -10,6 +10,24 @@
 
 #include "home_network/home_network.h"
 
+static const hn_topic_s * hn_topic_find(
+        const char * const name,
+        const hn_topic_data_s * const topic_data)
+{
+    const hn_topic_s *ref = NULL;
+    DDS_UnsignedLong idx;
+
+    for(idx = 0; (idx < topic_data->len) && (ref == NULL); idx += 1)
+    {
+        if(strncmp(name, topic_data->topics[idx].name, TOPIC_STRING_MAX) == 0)
+        {
+            ref = &topic_data->topics[idx];
+        }
+    }
+
+    return ref;
+}
+
 static DDS_ReturnCode_t register_reader_writer_history(
         RT_Registry_T * const registry)
 {
@@ -270,12 +288,13 @@ DDS_ReturnCode_t hn_create_topic(
 
     if(ret == DDS_RETCODE_OK)
     {
-        const DDS_UnsignedLong idx = participant->topic_data.len;
+        const DDS_UnsignedLong t_idx = participant->topic_data.len;
+        hn_topic_s * const t_ref = &participant->topic_data.topics[t_idx];
 
         (void) strncpy(
-                participant->topic_data.names[idx],
+                t_ref->name,
                 name,
-                sizeof(participant->topic_data.names[idx]));
+                sizeof(t_ref->name));
 
         ret = DDS_DomainParticipant_register_type(
                 participant->dp,
@@ -284,7 +303,7 @@ DDS_ReturnCode_t hn_create_topic(
 
         if(ret == DDS_RETCODE_OK)
         {
-            participant->topic_data.topics[idx] =
+            t_ref->topic =
                     DDS_DomainParticipant_create_topic(
                             participant->dp,
                             name,
@@ -293,13 +312,97 @@ DDS_ReturnCode_t hn_create_topic(
                             NULL,
                             DDS_STATUS_MASK_NONE);
 
-            if(participant->topic_data.topics[idx] == NULL)
+            if(t_ref->topic == NULL)
             {
                 ret = DDS_RETCODE_PRECONDITION_NOT_MET;
             }
         }
 
         participant->topic_data.len += 1;
+    }
+
+    return ret;
+}
+
+DDS_ReturnCode_t hn_create_publisher(
+        const char * const topic_name,
+        struct DDS_DataWriterListener * const dw_listener,
+        const DDS_StatusMask dw_mask,
+        DDS_DataWriter ** const dw_ref,
+        hn_participant_s * const participant)
+{
+    DDS_ReturnCode_t ret = DDS_RETCODE_OK;
+    const hn_topic_s *t_ref = NULL;
+
+    if((participant == NULL) || (participant->dp == NULL))
+    {
+        ret = DDS_RETCODE_BAD_PARAMETER;
+    }
+
+    if(ret == DDS_RETCODE_OK)
+    {
+        if(participant->pub_data.len > HN_PUBLISHERS_MAX)
+        {
+            ret = DDS_RETCODE_OUT_OF_RESOURCES;
+        }
+    }
+
+    if(ret == DDS_RETCODE_OK)
+    {
+        t_ref = hn_topic_find(topic_name, &participant->topic_data);
+
+        if(t_ref == NULL)
+        {
+            ret = DDS_RETCODE_PRECONDITION_NOT_MET;
+        }
+    }
+
+    if(ret == DDS_RETCODE_OK)
+    {
+        const DDS_UnsignedLong p_idx = participant->pub_data.len;
+        hn_publisher_s * const p_ref = &participant->pub_data.publishers[p_idx];
+        struct DDS_DataWriterQos dw_qos = DDS_DataWriterQos_INITIALIZER;
+
+        p_ref->topic_ref = t_ref;
+
+        // TODO - QoS, etc
+
+        dw_qos.reliability.kind = DDS_BEST_EFFORT_RELIABILITY_QOS;
+
+        p_ref->publisher = DDS_DomainParticipant_create_publisher(
+                participant->dp,
+                &DDS_PUBLISHER_QOS_DEFAULT,
+                NULL,
+                DDS_STATUS_MASK_NONE);
+
+        if(p_ref->publisher == NULL)
+        {
+            ret = DDS_RETCODE_PRECONDITION_NOT_MET;
+        }
+
+        if(ret == DDS_RETCODE_OK)
+        {
+            p_ref->datawriter = DDS_Publisher_create_datawriter(
+                    p_ref->publisher,
+                    p_ref->topic_ref->topic,
+                    &dw_qos,
+                    dw_listener,
+                    dw_mask);
+
+            if(dw_ref != NULL)
+            {
+                *dw_ref = p_ref->datawriter;
+            }
+
+            if(p_ref->datawriter == NULL)
+            {
+                ret = DDS_RETCODE_PRECONDITION_NOT_MET;
+            }
+        }
+
+        (void) DDS_DataWriterQos_finalize(&dw_qos);
+
+        participant->pub_data.len += 1;
     }
 
     return ret;
@@ -321,7 +424,7 @@ DDS_ReturnCode_t hn_unregister_types(
                 const struct NDDS_Type_Plugin * const plugin =
                         DDS_DomainParticipant_unregister_type(
                                 participant->dp,
-                                participant->topic_data.names[idx]);
+                                participant->topic_data.topics[idx].name);
 
                 if(plugin == NULL)
                 {
