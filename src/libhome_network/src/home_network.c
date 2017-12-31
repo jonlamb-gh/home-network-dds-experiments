@@ -2,6 +2,9 @@
  * @file home_network.c
  * @brief TODO.
  *
+ * TODO:
+ * - collapse common things into fx/macro
+ *
  */
 
 #include <stdlib.h>
@@ -93,7 +96,7 @@ static DDS_ReturnCode_t register_udp_transport(
         }
     }
 
-    // only allow 'eth0' for now
+    // only allow 'lo' for now
     if(ret == DDS_RETCODE_OK)
     {
         (void) memcpy(
@@ -105,7 +108,7 @@ static DDS_ReturnCode_t register_udp_transport(
         REDA_StringSeq_set_length(&udp_property->allow_interface, 1);
 
         *REDA_StringSeq_get_reference(&udp_property->allow_interface, 0) =
-                DDS_String_dup("eth0");
+                DDS_String_dup("lo");
 
         const RTI_BOOL status = RT_Registry_register(
                 registry,
@@ -403,6 +406,90 @@ DDS_ReturnCode_t hn_create_publisher(
         (void) DDS_DataWriterQos_finalize(&dw_qos);
 
         participant->pub_data.len += 1;
+    }
+
+    return ret;
+}
+
+DDS_ReturnCode_t hn_create_subscriber(
+        const char * const topic_name,
+        struct DDS_DataReaderListener * const dr_listener,
+        const DDS_StatusMask dr_mask,
+        DDS_DataReader ** const dr_ref,
+        hn_participant_s * const participant)
+{
+    DDS_ReturnCode_t ret = DDS_RETCODE_OK;
+    const hn_topic_s *t_ref = NULL;
+
+    if((participant == NULL) || (participant->dp == NULL))
+    {
+        ret = DDS_RETCODE_BAD_PARAMETER;
+    }
+
+    if(ret == DDS_RETCODE_OK)
+    {
+        if(participant->sub_data.len > HN_SUBSCRIBERS_MAX)
+        {
+            ret = DDS_RETCODE_OUT_OF_RESOURCES;
+        }
+    }
+
+    if(ret == DDS_RETCODE_OK)
+    {
+        t_ref = hn_topic_find(topic_name, &participant->topic_data);
+
+        if(t_ref == NULL)
+        {
+            ret = DDS_RETCODE_PRECONDITION_NOT_MET;
+        }
+    }
+
+    if(ret == DDS_RETCODE_OK)
+    {
+        const DDS_UnsignedLong s_idx = participant->sub_data.len;
+        hn_subscriber_s * const s_ref = &participant->sub_data.subscribers[s_idx];
+        struct DDS_DataReaderQos dr_qos = DDS_DataReaderQos_INITIALIZER;
+
+        s_ref->topic_ref = t_ref;
+
+        // TODO - QoS, etc
+
+        dr_qos.reliability.kind = DDS_BEST_EFFORT_RELIABILITY_QOS;
+
+        s_ref->subscriber = DDS_DomainParticipant_create_subscriber(
+                participant->dp,
+                &DDS_SUBSCRIBER_QOS_DEFAULT,
+                NULL,
+                DDS_STATUS_MASK_NONE);
+
+        if(s_ref->subscriber == NULL)
+        {
+            ret = DDS_RETCODE_PRECONDITION_NOT_MET;
+        }
+
+        if(ret == DDS_RETCODE_OK)
+        {
+            s_ref->datareader = DDS_Subscriber_create_datareader(
+                    s_ref->subscriber,
+                    DDS_Topic_as_topicdescription(s_ref->topic_ref->topic),
+                    &dr_qos,
+                    dr_listener,
+                    dr_mask);
+
+            if(dr_ref != NULL)
+            {
+                *dr_ref = s_ref->datareader;
+            }
+
+            if(s_ref->datareader == NULL)
+            {
+                ret = DDS_RETCODE_PRECONDITION_NOT_MET;
+            }
+        }
+
+        (void) DDS_DataReaderQos_finalize(&dr_qos);
+
+        participant->sub_data.len += 1;
     }
 
     return ret;

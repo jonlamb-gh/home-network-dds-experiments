@@ -95,6 +95,43 @@ static DDS_ReturnCode_t test_publish(
     return ret;
 }
 
+static DDS_ReturnCode_t test_subscribe(
+        hn_participant_s * const participant)
+{
+    DDS_ReturnCode_t ret = DDS_RETCODE_OK;
+    DDS_DataReader *dr_ref = NULL;
+    sensor_infoDataReader *type_dr = NULL;
+    struct DDS_DataReaderListener dr_listener =
+            DDS_DataReaderListener_INITIALIZER;
+
+    if(ret == DDS_RETCODE_OK)
+    {
+        ret = hn_create_subscriber(
+                "sensor_info",
+                &dr_listener,
+                DDS_STATUS_MASK_NONE,
+                &dr_ref,
+                participant);
+    }
+
+    if(ret == DDS_RETCODE_OK)
+    {
+        type_dr = sensor_infoDataReader_narrow(dr_ref);
+
+        if(type_dr == NULL)
+        {
+            ret = DDS_RETCODE_PRECONDITION_NOT_MET;
+        }
+    }
+
+    if(ret == DDS_RETCODE_OK)
+    {
+        // TODO - take
+    }
+
+    return ret;
+}
+
 int main(int argc, char **argv)
 {
     hn_participant_s participant;
@@ -120,6 +157,12 @@ int main(int argc, char **argv)
     printf("<----------\n");
 
     printf("---------->\n");
+    printf("  'test_subscribe()'\n");
+    DDS_ReturnCode_t ret_s = test_subscribe(&participant);
+    printf("    %d\n", (int) ret_s);
+    printf("<----------\n");
+
+    printf("---------->\n");
     printf("  'test_publish()'\n");
     DDS_ReturnCode_t ret_p = test_publish(&participant);
     printf("    %d\n", (int) ret_p);
@@ -131,5 +174,5 @@ int main(int argc, char **argv)
     printf("    %d\n", (int) ret_d);
     printf("<----------\n");
 
-    return (int) (ret_c | ret_e | ret_t | ret_d);
+    return (int) (ret_c | ret_t | ret_e | ret_p | ret_s | ret_t | ret_d);
 }
