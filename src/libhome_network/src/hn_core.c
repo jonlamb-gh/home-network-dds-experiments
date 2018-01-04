@@ -1,9 +1,10 @@
 /**
- * @file home_network.c
+ * @file hn_core.c
  * @brief TODO.
  *
  * TODO:
  * - collapse common things into fx/macro
+ * - move create/destroy together ?
  *
  */
 
@@ -329,6 +330,7 @@ DDS_ReturnCode_t hn_create_topic(
 
 DDS_ReturnCode_t hn_create_publisher(
         const char * const topic_name,
+        const DDS_ReliabilityQosPolicyKind reliability,
         struct DDS_DataWriterListener * const dw_listener,
         const DDS_StatusMask dw_mask,
         DDS_DataWriter ** const dw_ref,
@@ -370,7 +372,7 @@ DDS_ReturnCode_t hn_create_publisher(
 
         // TODO - QoS, etc
 
-        dw_qos.reliability.kind = DDS_BEST_EFFORT_RELIABILITY_QOS;
+        dw_qos.reliability.kind = reliability;
 
         p_ref->publisher = DDS_DomainParticipant_create_publisher(
                 participant->dp,
@@ -413,6 +415,7 @@ DDS_ReturnCode_t hn_create_publisher(
 
 DDS_ReturnCode_t hn_create_subscriber(
         const char * const topic_name,
+        const DDS_ReliabilityQosPolicyKind reliability,
         struct DDS_DataReaderListener * const dr_listener,
         const DDS_StatusMask dr_mask,
         DDS_DataReader ** const dr_ref,
@@ -454,7 +457,7 @@ DDS_ReturnCode_t hn_create_subscriber(
 
         // TODO - QoS, etc
 
-        dr_qos.reliability.kind = DDS_BEST_EFFORT_RELIABILITY_QOS;
+        dr_qos.reliability.kind = reliability; 
 
         s_ref->subscriber = DDS_DomainParticipant_create_subscriber(
                 participant->dp,

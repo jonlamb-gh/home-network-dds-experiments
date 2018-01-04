@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "home_network/home_network.h"
+
 #include "sensor.h"
 #include "sensorPlugin.h"
 #include "sensorSupport.h"
@@ -56,6 +57,7 @@ static DDS_ReturnCode_t test_publish(
     {
         ret = hn_create_publisher(
                 "sensor_info",
+                DDS_RELIABLE_RELIABILITY_QOS,
                 &dw_listener,
                 DDS_STATUS_MASK_NONE,
                 &dw_ref,
@@ -108,6 +110,7 @@ static DDS_ReturnCode_t test_subscribe(
     {
         ret = hn_create_subscriber(
                 "sensor_info",
+                DDS_RELIABLE_RELIABILITY_QOS,
                 &dr_listener,
                 DDS_STATUS_MASK_NONE,
                 &dr_ref,
@@ -157,15 +160,15 @@ int main(int argc, char **argv)
     printf("<----------\n");
 
     printf("---------->\n");
-    printf("  'test_subscribe()'\n");
-    DDS_ReturnCode_t ret_s = test_subscribe(&participant);
-    printf("    %d\n", (int) ret_s);
-    printf("<----------\n");
-
-    printf("---------->\n");
     printf("  'test_publish()'\n");
     DDS_ReturnCode_t ret_p = test_publish(&participant);
     printf("    %d\n", (int) ret_p);
+    printf("<----------\n");
+
+    printf("---------->\n");
+    printf("  'test_subscribe()'\n");
+    DDS_ReturnCode_t ret_s = test_subscribe(&participant);
+    printf("    %d\n", (int) ret_s);
     printf("<----------\n");
 
     printf("---------->\n");

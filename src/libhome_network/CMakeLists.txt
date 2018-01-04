@@ -10,7 +10,8 @@ enable_testing()
 add_library(
         home_network
         STATIC
-        src/home_network.c)
+        src/hn_timer.c
+        src/hn_core.c)
 
 set_property(
         TARGET
@@ -127,26 +128,54 @@ export(
         FILE
         LibHomeNetworkConfig.cmake)
 
+# TODO - make this better
 add_executable(
-        example_test
+        example-test
         tests/example_test.c)
 
 set_property(
         TARGET
-        example_test
+        example-test
         PROPERTY
         C_STANDARD
         99)
 
 target_link_libraries(
-        example_test
+        example-test
         -static-libgcc
         -static)
 
 target_link_libraries(
-        example_test
+        example-test
         home_network)
 
 add_test(
-        example_test
-        example_test)
+        example-test
+        example-test)
+
+# timer-test
+add_executable(
+        timer-test
+        tests/timer_test.c)
+
+set_property(
+        TARGET
+        timer-test
+        PROPERTY
+        C_STANDARD
+        99)
+
+target_link_libraries(
+        timer-test
+        -static-libgcc
+        -static)
+
+target_link_libraries(
+        timer-test
+        home_network
+        pthread
+        rt)
+
+add_test(
+        timer-test
+        timer-test)
