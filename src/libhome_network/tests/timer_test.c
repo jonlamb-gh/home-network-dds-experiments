@@ -11,6 +11,8 @@
 
 #include "home_network/home_network.h"
 
+#define TIMER_INTERVAL_MS (500ULL)
+
 #define TEST_ADDR ((void*) 0x1234)
 
 static void timer_callback(union sigval data)
@@ -26,17 +28,27 @@ static void timer_callback(union sigval data)
 int main(int argc, char **argv)
 {
     hn_timer_s timer;
+    struct timespec tspec;
 
     (void) memset(&timer, 0, sizeof(timer));
+    (void) memset(&tspec, 0, sizeof(tspec));
 
     // 500 ms interval
     const struct itimerspec spec =
     {
         .it_value.tv_sec = 0,
-        .it_value.tv_nsec = (1000*1000*500),
+        .it_value.tv_nsec = (1000ULL * 1000ULL * TIMER_INTERVAL_MS),
         .it_interval.tv_sec = 0,
-        .it_interval.tv_nsec = (1000*1000*500)
+        .it_interval.tv_nsec = (1000ULL * 1000ULL * TIMER_INTERVAL_MS)
     };
+
+    hn_timespec_set_ms(TIMER_INTERVAL_MS, &tspec);
+
+    printf(
+            "%llu ms == %lu s : %lu ns\n",
+            TIMER_INTERVAL_MS,
+            (unsigned long) tspec.tv_sec,
+            (unsigned long) tspec.tv_nsec);
 
     printf("---------->\n");
     printf("  'hn_timer_create()'\n");

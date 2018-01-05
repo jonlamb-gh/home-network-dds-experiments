@@ -30,5 +30,9 @@ int hn_timer_set(
         const struct itimerspec * const spec,
         hn_timer_s * const timer);
 
+void hn_timespec_set_ms(
+        const unsigned long long ms,
+        struct timespec * const tspec);
+
 #endif /* HN_TIMER_H */
 

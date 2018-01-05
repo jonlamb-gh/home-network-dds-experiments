@@ -81,3 +81,22 @@ int hn_timer_set(
 
     return ret;
 }
+
+void hn_timespec_set_ms(
+        const unsigned long long ms,
+        struct timespec * const tspec)
+{
+    if(tspec != NULL)
+    {
+        if(ms == 0)
+        {
+            tspec->tv_sec = 0;
+            tspec->tv_nsec = 0;
+        }
+        else
+        {
+            tspec->tv_sec = (ms / 1000ULL);
+            tspec->tv_nsec = ((ms % 1000ULL) * 1000000ULL);
+        }
+    }
+}
