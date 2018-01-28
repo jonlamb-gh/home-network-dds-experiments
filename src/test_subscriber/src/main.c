@@ -66,9 +66,21 @@ static DDS_ReturnCode_t create_subscriber(
 }
 
 static DDS_ReturnCode_t wait_for_data(
+        DDS_WaitSet * const waitset,
+        struct DDS_ConditionSeq * const active_conditions,
         hn_participant_s * const participant)
 {
     DDS_ReturnCode_t ret = DDS_RETCODE_OK;
+    const struct DDS_Duration_t wait_timeout =
+    {
+        .sec = 4,
+        .nanosec = 0
+    };
+
+    ret = DDS_WaitSet_wait(
+            waitset,
+            active_conditions,
+            &wait_timeout);
 
     return ret;
 }
@@ -157,7 +169,8 @@ int main(int argc, char **argv)
 
     if(dds_ret == DDS_RETCODE_OK)
     {
-        dds_ret = DDS_WaitSet_attach_condition(waitset,
+        dds_ret = DDS_WaitSet_attach_condition(
+                waitset,
                 DDS_StatusCondition_as_condition(dr_condition));
     }
 
@@ -166,7 +179,6 @@ int main(int argc, char **argv)
         dds_ret = hn_enable(&participant);
     }
 
-
     if((dds_ret != DDS_RETCODE_OK) || (ret != 0))
     {
         exit_signaled = 1;
@@ -174,7 +186,20 @@ int main(int argc, char **argv)
 
     while(exit_signaled == 0)
     {
-        (void) sleep(1);
+        dds_ret = wait_for_data(
+                waitset,
+                &active_conditions,
+                &participant);
+
+        if(dds_ret == DDS_RETCODE_TIMEOUT)
+        {
+            printf("timeout\n");
+            dds_ret = DDS_RETCODE_OK;
+        }
+        else if(dds_ret == DDS_RETCODE_OK)
+        {
+            printf("check\n");
+        }
 
         if((dds_ret != DDS_RETCODE_OK) || (ret != 0))
         {

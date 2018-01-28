@@ -217,13 +217,16 @@ DDS_ReturnCode_t hn_create(
         dp_qos.resource_limits.remote_reader_allocation = 8;
         dp_qos.resource_limits.remote_writer_allocation = 8;
 
-        strcpy(dp_qos.participant_name.name, "Participant_1");
+        // TODO
+        //strcpy(dp_qos.participant_name.name, "Participant_1");
 
+        // TODO - default to loopback
         // set initial peers to use the default multicast peer
         DDS_StringSeq_set_maximum(&dp_qos.discovery.initial_peers, 1);
         DDS_StringSeq_set_length(&dp_qos.discovery.initial_peers, 1);
         *DDS_StringSeq_get_reference(&dp_qos.discovery.initial_peers, 0) =
-                DDS_String_dup("239.255.0.1");
+                DDS_String_dup("127.0.0.1");
+                //DDS_String_dup("239.255.0.1");
 
         participant->dp = DDS_DomainParticipantFactory_create_participant(
                 factory,
@@ -371,8 +374,13 @@ DDS_ReturnCode_t hn_create_publisher(
         p_ref->topic_ref = t_ref;
 
         // TODO - QoS, etc
-
         dw_qos.reliability.kind = reliability;
+        dw_qos.resource_limits.max_samples = 32;
+        dw_qos.resource_limits.max_samples_per_instance = 32;
+        dw_qos.resource_limits.max_instances = 1;
+        dw_qos.history.depth = 32;
+        dw_qos.protocol.rtps_reliable_writer.heartbeat_period.sec = 0;
+        dw_qos.protocol.rtps_reliable_writer.heartbeat_period.nanosec = 250000000;
 
         p_ref->publisher = DDS_DomainParticipant_create_publisher(
                 participant->dp,
@@ -456,8 +464,13 @@ DDS_ReturnCode_t hn_create_subscriber(
         s_ref->topic_ref = t_ref;
 
         // TODO - QoS, etc
-
-        dr_qos.reliability.kind = reliability; 
+        dr_qos.reliability.kind = reliability;
+        dr_qos.resource_limits.max_samples = 32;
+        dr_qos.resource_limits.max_instances = 1;
+        dr_qos.resource_limits.max_samples_per_instance = 32;
+        dr_qos.reader_resource_limits.max_remote_writers = 10;
+        dr_qos.reader_resource_limits.max_remote_writers_per_instance = 10;
+        dr_qos.history.depth = 32;
 
         s_ref->subscriber = DDS_DomainParticipant_create_subscriber(
                 participant->dp,
